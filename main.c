@@ -4,25 +4,32 @@
 #include <math.h>
 #include <string.h>
 
-// DefiniÁ„o da estrutura da pilha
-typedef struct No {
+#define M_PI 3.14159265358979323846
+
+// Defini√ß√£o da estrutura da pilha
+typedef struct No
+{
     double dado;
     struct No *proximo;
 } No;
 
-typedef struct {
+typedef struct
+{
     No *topo;
 } Pilha;
 
-void inicializar(Pilha *pilha) {
+void inicializar(Pilha *pilha)
+{
     pilha->topo = NULL;
 }
 
-// FunÁ„o para empilhar um valor na pilha
-void empilhar(Pilha *pilha, double valor) {
+// Fun√ß√£o para empilhar um valor na pilha
+void empilhar(Pilha *pilha, double valor)
+{
     No *novoNo = (No *)malloc(sizeof(No));
-    if (novoNo == NULL) {
-        printf("Erro: Falha na alocaÁ„o de memÛria\n");
+    if (novoNo == NULL)
+    {
+        printf("Erro: Falha na aloca√ß√£o de mem√≥ria\n");
         exit(EXIT_FAILURE);
     }
     novoNo->dado = valor;
@@ -30,101 +37,136 @@ void empilhar(Pilha *pilha, double valor) {
     pilha->topo = novoNo;
 }
 
-// FunÁ„o para desempilhar um valor da pilha
-double desempilhar(Pilha *pilha) {
-    if (pilha->topo != NULL) {
+// Fun√ß√£o para desempilhar um valor da pilha
+double desempilhar(Pilha *pilha)
+{
+    if (pilha->topo != NULL)
+    {
         No *temp = pilha->topo;
         double valor = temp->dado;
         pilha->topo = temp->proximo;
         free(temp);
         return valor;
-    } else {
+    }
+    else
+    {
         printf("Erro: Pilha vazia\n");
         exit(EXIT_FAILURE);
     }
 }
 
-// FunÁ„o principal para avaliar uma express„o em notaÁ„o pÛs-fixada
-double avaliarExpressaoPosfixada(const char *expressao) {
+// Fun√ß√£o principal para avaliar uma express√£o em nota√ß√£o p√≥s-fixada
+double avaliarExpressaoPosfixada(const char *expressao)
+{
     Pilha pilha;
     inicializar(&pilha);
-    int i = 0;
-    char token[20];
-    double operando1, operando2;
+    char *token;
 
-    while (sscanf(expressao, "%s", token) != EOF) {
-        expressao += strlen(token) + 1; // AvanÁa para o prÛximo token
-
-        if (isdigit(token[0])) {
-            // Se for um dÌgito, converte para double e empilha
+    // Divide a express√£o em tokens utilizando espa√ßos como delimitadores
+    token = strtok((char *)expressao, " ");
+    while (token != NULL)
+    {
+        if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1])))
+        {
+            // Se for um d√≠gito (ou n√∫mero negativo), converte para double e empilha
             empilhar(&pilha, atof(token));
-        } else if (strcmp(token, "log") == 0) {
-            operando1 = desempilhar(&pilha);
-            empilhar(&pilha, log10(operando1));
-            log10(operando1);
-        } else if (strcmp(token, "sen") == 0) {
-    		operando1 = desempilhar(&pilha);
-    		operando1 = sin(operando1 * M_PI / 180.0);
-    		// falta arredondar o valor
-    		empilhar(&pilha, operando1);
-		} else if (strcmp(token, "cos") == 0) {
-            operando1 = desempilhar(&pilha);
-            operando1 = cos(operando1 * M_PI / 180.0);
-            empilhar(&pilha, operando1);
-        } else if (strcmp(token, "tg") == 0) {
-        	operando1 = desempilhar(&pilha);
-        	operando1 = tan(operando1 * M_PI / 180.0);
-        	empilhar(&pilha, operando1);
-		} else if (strcmp(token, "sqrt") == 0) {
-			operando1 = desempilhar(&pilha);
-        	operando1 = sqrt(operando1);
-        	empilhar(&pilha, operando1);
-		}
-		else {
-            // Se for um operador, ...
-            operando2 = desempilhar(&pilha);
-            operando1 = desempilhar(&pilha);
+        }
+        else if (strcmp(token, "log") == 0)
+        {
+            double operando = desempilhar(&pilha);
+            empilhar(&pilha, log10(operando));
+        }
+        else if (strcmp(token, "sen") == 0)
+        {
+            double operando = desempilhar(&pilha);
+            empilhar(&pilha, sin(operando * M_PI / 180.0));
+        }
+        else if (strcmp(token, "cos") == 0)
+        {
+            double operando = desempilhar(&pilha);
+            empilhar(&pilha, cos(operando * M_PI / 180.0));
+        }
+        else if (strcmp(token, "tg") == 0)
+        {
+            double operando = desempilhar(&pilha);
+            empilhar(&pilha, tan(operando * M_PI / 180.0));
+        }
+        else if (strcmp(token, "sqrt") == 0)
+        {
+            double operando = desempilhar(&pilha);
+            empilhar(&pilha, sqrt(operando));
+        }
+        else if (strcmp(token, "^") == 0)
+        {
+            double operando2 = desempilhar(&pilha);
+            double operando1 = desempilhar(&pilha);
+            empilhar(&pilha, pow(operando1, operando2));
+        }
+        else if (strcmp(token, "+") == 0 || strcmp(token, "-") == 0 ||
+                 strcmp(token, "*") == 0 || strcmp(token, "/") == 0)
+        {
+            double operando2 = desempilhar(&pilha);
+            double operando1 = desempilhar(&pilha);
 
-            switch (token[0]) {
-                case '+':
-                    empilhar(&pilha, operando1 + operando2);
-                    break;
-                case '-':
-                    empilhar(&pilha, operando1 - operando2);
-                    break;
-                case '*':
-                    empilhar(&pilha, operando1 * operando2);
-                    break;
-                case '/':
-                    if (operando2 != 0.0) {
-                        empilhar(&pilha, operando1 / operando2);
-                    } else {
-                        printf("Erro: Divis„o por zero\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    break;
-                case '^':
-                    empilhar(&pilha, pow(operando1, operando2));
-                    break;
-                default:
-                    printf("Erro: Operador inv·lido\n");
+            switch (token[0])
+            {
+            case '+':
+                empilhar(&pilha, operando1 + operando2);
+                break;
+            case '-':
+                empilhar(&pilha, operando1 - operando2);
+                break;
+            case '*':
+                empilhar(&pilha, operando1 * operando2);
+                break;
+            case '/':
+                if (operando2 != 0.0)
+                    empilhar(&pilha, operando1 / operando2);
+                else
+                {
+                    printf("Erro: Divis√£o por zero\n");
                     exit(EXIT_FAILURE);
+                }
+                break;
+            default:
+                printf("Erro: Operador inv√°lido\n");
+                exit(EXIT_FAILURE);
             }
         }
+        else
+        {
+            printf("Erro: Token inv√°lido na express√£o\n");
+            exit(EXIT_FAILURE);
+        }
+
+        token = strtok(NULL, " "); // Avan√ßa para o pr√≥ximo token
     }
 
-    // O resultado final estar· no topo da pilha
+    // O resultado final estar√° no topo da pilha
     return desempilhar(&pilha);
 }
 
-int main() {
-    // Exemplo de express„o em notaÁ„o pÛs-fixada: ì2 4 + 5 *
-    printf("Digite a expressao:\n");
+int main()
+{
     char expressaotemp[100];
-    scanf(" %[^\n]", expressaotemp);
-    const char *expressao = expressaotemp;
-    double resultado = avaliarExpressaoPosfixada(expressao);
-    printf("Resultado: %f\n", resultado);
+    const char *expressao;
+    double resultado;
+    int continuar = 1;
+
+    while (continuar)
+    {
+        // Exemplo de express√£o em nota√ß√£o p√≥s-fixada: ‚Äú8 45 60 + 30 cos *‚Äù
+        printf("Digite a expressao:\n");
+        scanf(" %[^\n]", expressaotemp);
+        expressao = expressaotemp;
+        resultado = avaliarExpressaoPosfixada(expressao);
+        printf("Resultado: %.2f\n", resultado);
+
+        printf("Deseja continuar calculando? (1 - Sim, 0 - Nao): ");
+        scanf("%d", &continuar);
+        while (getchar() != '\n')
+            ; // Limpa o buffer de entrada
+    }
+
     return 0;
 }
-
